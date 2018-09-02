@@ -132,6 +132,8 @@ function VelocityKiller.PerformCommand( ply, cmd, args, fullstring )
 		SendMessage( ply, "----------------------------" )
 		SendMessage( ply, "Permission = [ ] Everyone, [*] Admin, [S] Server" )
 		SendMessage( ply, "[S] vk_enabled [0 or 1] - If 0, the script will no longer activate." )
+		SendMessage( ply, "[S] vk_speedlimit [0 thru 600+] - Sets the speed at which to start killing velocity. If 0, always kill velocity." )
+		SendMessage( ply, "[S] vk_suppressor [0 thru 100] - Sets how soft to slow down players. The higher the number, the softer the impact." )
 		SendMessage( ply, "[ ] vk_commands - Retrieve a list of console commands." )
 		SendMessage( ply, "[ ] vk_examples - Retrieve a list of command examples." )
 		SendMessage( ply, "[ ] vk_status - Retrieve the current status of the script." )
@@ -143,6 +145,8 @@ function VelocityKiller.PerformCommand( ply, cmd, args, fullstring )
 		SendMessage( ply, "Console Command Examples" )
 		SendMessage( ply, "----------------------------" )
 		SendMessage( ply, "\"vk_enabled 0\" - Forces the script to no longer activate." )
+		SendMessage( ply, "\"vk_speedlimit 600\" - Sets the speed limit to 600, which is good for Sandbox." )
+		SendMessage( ply, "\"vk_suppressor 50\" - Sets the suppressing speed to 50, which is also good for Sandbox." )
 		SendMessage( ply, "\"vk_blacklist add sandbox\" - Adds sandbox to the blacklist." )
 		SendMessage( ply, "\"vk_blacklist remove terrortown\" - Removes TTT from the blacklist." )
 		return
@@ -194,11 +198,36 @@ else
 end
 
 CreateConVar( "vk_enabled", "1", { FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE } )
+CreateConVar( "vk_speedlimit", "300", { FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE } )
+CreateConVar( "vk_suppressor", "100", { FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE } )
 
 VelocityKiller.enabled = GetConVar( "vk_enabled" ):GetBool()
+VelocityKiller.speedlimit = GetConVar( "vk_speedlimit" ):GetInt()
+VelocityKiller.suppressor = GetConVar( "vk_suppressor" ):GetInt()
 
 cvars.AddChangeCallback( "vk_enabled", function( convar_name, value_old, value_new )
 	VelocityKiller.SetEnabled( tobool( value_new ) )
+end )
+
+cvars.AddChangeCallback( "vk_speedlimit", function( convar_name, value_old, value_new )
+	value_new = tonumber( value_new )
+	if value_new < 0 then
+		GetConVar( "vk_speedlimit" ):SetInt( 0 )
+		return
+	end
+	VelocityKiller.speedlimit = value_new
+end )
+
+cvars.AddChangeCallback( "vk_suppressor", function( convar_name, value_old, value_new )
+	value_new = tonumber( value_new )
+	if value_new > 100 then
+		GetConVar( "vk_suppressor" ):SetInt( 100 )
+		return
+	elseif value_new < 0 then
+		GetConVar( "vk_suppressor" ):SetInt( 0 )
+		return
+	end
+	VelocityKiller.suppressor = value_new
 end )
 
 hook.Add( "OnGamemodeLoaded", "CyberScriptz_VelocityKiller", function()
@@ -210,7 +239,10 @@ hook.Add( "OnGamemodeLoaded", "CyberScriptz_VelocityKiller", function()
 	function GAMEMODE:OnPlayerHitGround( ply, inWater, onFloater, speed )
 		if VelocityKiller.enabled and VelocityKiller.activated then
 			local vel = ply:GetVelocity()
-			ply:SetVelocity( Vector( -( vel.x / 2 ), -( vel.y / 2 ), 0 ) )
+			if VelocityKiller.speedlimit == 0 or ( vel.x > VelocityKiller.speedlimit or vel.x < -VelocityKiller.speedlimit or vel.y > VelocityKiller.speedlimit or vel.y < -VelocityKiller.speedlimit ) then
+				local suppressor = 1 + (VelocityKiller.suppressor / 100)
+				ply:SetVelocity( Vector( -( vel.x / suppressor ), -( vel.y / suppressor ), 0 ) )
+			end
 		end
 		return Old_OnPlayerHitGround( self, ply, inWater, onFloater, speed )
 	end
