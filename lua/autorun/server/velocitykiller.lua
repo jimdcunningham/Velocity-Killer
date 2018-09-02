@@ -199,7 +199,7 @@ end
 
 CreateConVar( "vk_enabled", "1", { FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE } )
 CreateConVar( "vk_speedlimit", "300", { FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE } )
-CreateConVar( "vk_suppressor", "100", { FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE } )
+CreateConVar( "vk_suppressor", "50", { FCVAR_ARCHIVE, FCVAR_SERVER_CAN_EXECUTE } )
 
 VelocityKiller.enabled = GetConVar( "vk_enabled" ):GetBool()
 VelocityKiller.speedlimit = GetConVar( "vk_speedlimit" ):GetInt()
